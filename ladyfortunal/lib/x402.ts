@@ -22,40 +22,31 @@ export const PAY_TO_ADDRESS = process.env.PAYMENT_WALLET_ADDRESS || ""
 export const BUILDER_CODE = process.env.BASE_BUILDER_CODE || "bc_placeholder"
 
 /**
- * Price per purchase in USDC on Base mainnet.
+ * Price per purchase, expressed in USD. The CDP facilitator resolves "$" prices
+ * to USDC on Base mainnet.
  */
-export const PRICE = "0.001 USDC"
+export const PRICE = "$0.001" as const
 
-let _resourceServer: x402ResourceServer | null = null
-
-/**
- * Lazy-initialized x402 resource server.
- * Only created on first request to avoid module load errors.
- */
-export function getResourceServer(): x402ResourceServer {
-  if (_resourceServer) return _resourceServer
-
-  const cdpKeyId = process.env.CDP_API_KEY_ID
-  const cdpKeySecret = process.env.CDP_API_KEY_SECRET
-
-  if (!cdpKeyId || !cdpKeySecret) {
-    throw new Error(
-      "Missing CDP_API_KEY_ID or CDP_API_KEY_SECRET environment variables"
-    )
-  }
-
-  const facilitatorConfig = createFacilitatorConfig(cdpKeyId, cdpKeySecret)
-  const facilitatorClient = new HTTPFacilitatorClient(facilitatorConfig)
-
-  _resourceServer = new x402ResourceServer(facilitatorClient)
-    .register(BASE_MAINNET, new ExactEvmScheme())
-    .registerExtension(builderCodeResourceServerExtension)
-    .registerExtension(bazaarResourceServerExtension)
-
-  return _resourceServer
+if (!process.env.CDP_API_KEY_ID || !process.env.CDP_API_KEY_SECRET) {
+  // Surfaced at request time so the route returns a clear 500 instead of a cryptic auth error.
+  console.error("[v0] Missing CDP_API_KEY_ID / CDP_API_KEY_SECRET — required for the CDP facilitator on mainnet.")
 }
 
 /**
- * Shared x402 resource server getter for use in route handlers.
+ * The Coinbase CDP facilitator config (mainnet). It is authenticated with the
+ * CDP API key pair and is what makes the endpoint discoverable through the Bazaar.
  */
-export const resourceServer = getResourceServer
+const facilitatorConfig = createFacilitatorConfig(process.env.CDP_API_KEY_ID, process.env.CDP_API_KEY_SECRET)
+
+const facilitatorClient = new HTTPFacilitatorClient(facilitatorConfig)
+
+/**
+ * Shared x402 resource server:
+ * - settles "exact" EVM payments on Base mainnet,
+ * - attributes payments to the Builder Code (ERC-8021),
+ * - declares Bazaar discovery metadata so agents can find the endpoint.
+ */
+export const resourceServer = new x402ResourceServer(facilitatorClient)
+  .register(BASE_MAINNET, new ExactEvmScheme())
+  .registerExtension(builderCodeResourceServerExtension)
+  .registerExtension(bazaarResourceServerExtension)

@@ -1,65 +1,50 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { declareBuilderCodeExtension, BUILDER_CODE as BUILDER_CODE_KEY } from "@x402/extensions/builder-code"
-import { PAY_TO_ADDRESS, BUILDER_CODE, BASE_MAINNET, PRICE } from "@/lib/x402"
+import { withX402 } from "@x402/next"
+import { declareBuilderCodeExtension } from "@x402/extensions/builder-code"
+import { declareDiscoveryExtension } from "@x402/extensions/bazaar"
+import { resourceServer, BASE_MAINNET, PAY_TO_ADDRESS, PRICE, BUILDER_CODE } from "@/lib/x402"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-// x402 V2 Payment Required schema with Builder Code extension
-const createPaymentRequired = () => ({
-  x402Version: 2,
-  resource: {
-    url: "/api/fortune",
-    description: "Random fortune generator",
-    mimeType: "application/json",
-  },
-  accepts: [
-    {
+/**
+ * The actual fulfillment. This only runs after the x402 payment has been
+ * verified and settled on Base mainnet, so we can safely return the fortune.
+ */
+async function handler(_request: NextRequest) {
+  return NextResponse.json({
+    fortune: "Your fortune will come through the blockchain.",
+    timestamp: new Date().toISOString(),
+    message: "Thanks for your payment!",
+  })
+}
+
+export const GET = withX402(
+  handler,
+  {
+    accepts: {
       scheme: "exact",
       network: BASE_MAINNET,
-      asset: "USDC",
-      amount: PRICE,
       payTo: PAY_TO_ADDRESS,
-      maxTimeoutSeconds: 60,
+      price: PRICE,
     },
-  ],
-  extensions: {
-    [BUILDER_CODE_KEY]: declareBuilderCodeExtension(BUILDER_CODE),
+    description: "Get a random fortune via x402 payment on Base mainnet.",
+    mimeType: "application/json",
+    serviceName: "Fortune Generator",
+    tags: ["fortune", "prediction", "entertainment"],
+    // ERC-8021 Builder Code attribution ("a" app code) on every settlement.
+    extensions: {
+      ...declareBuilderCodeExtension(BUILDER_CODE),
+      // Bazaar discovery metadata: tells agents how to call this endpoint.
+      ...declareDiscoveryExtension({
+        output: {
+          example: {
+            fortune: "Your fortune will come through the blockchain.",
+            message: "Thanks for your payment!",
+          },
+        },
+      }),
+    },
   },
-})
-
-export async function GET(_req: NextRequest) {
-  const paymentRequired = createPaymentRequired()
-  
-  return new NextResponse(
-    JSON.stringify({
-      error: "Payment Required",
-      message: "This endpoint requires payment via x402",
-    }),
-    {
-      status: 402,
-      headers: {
-        "Content-Type": "application/json",
-        "Payment-Required": Buffer.from(JSON.stringify(paymentRequired)).toString("base64"),
-      },
-    }
-  )
-}
-
-export async function POST(_req: NextRequest) {
-  const paymentRequired = createPaymentRequired()
-  
-  return new NextResponse(
-    JSON.stringify({
-      error: "Payment Required",
-      message: "This endpoint requires payment via x402",
-    }),
-    {
-      status: 402,
-      headers: {
-        "Content-Type": "application/json",
-        "Payment-Required": Buffer.from(JSON.stringify(paymentRequired)).toString("base64"),
-      },
-    }
-  )
-}
+  resourceServer,
+)
