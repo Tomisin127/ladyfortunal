@@ -14,12 +14,12 @@ export const BASE_MAINNET = "eip155:8453"
 /**
  * The wallet that receives the USDC for each purchase.
  */
-export const PAY_TO_ADDRESS = process.env.PAY_TO_ADDRESS || ""
+export const PAY_TO_ADDRESS = process.env.PAYMENT_WALLET_ADDRESS || ""
 
 /**
  * ERC-8021 Builder Code (app code "a") attributed on every settlement.
  */
-export const BUILDER_CODE = process.env.BUILDER_CODE || "bc_placeholder"
+export const BUILDER_CODE = process.env.BASE_BUILDER_CODE || "bc_placeholder"
 
 /**
  * Price per purchase in USDC on Base mainnet.

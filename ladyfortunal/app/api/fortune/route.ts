@@ -1,36 +1,30 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { declareBuilderCodeExtension, BUILDER_CODE as BUILDER_CODE_KEY } from "@x402/extensions/builder-code"
+import { PAY_TO_ADDRESS, BUILDER_CODE, BASE_MAINNET, PRICE } from "@/lib/x402"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const PAY_TO_ADDRESS = process.env.PAY_TO_ADDRESS || ""
-const BUILDER_CODE = process.env.BUILDER_CODE || "bc_placeholder"
-
-// x402 Payment Requirement Challenge
-const paymentRequirement = {
-  resource: {
-    url: "/api/fortune",
-    description: "Random fortune generator",
-    mimeType: "application/json",
-  },
+// x402 Payment Requirement Challenge with Builder Code Attribution
+const createPaymentRequirement = () => ({
   accepts: [
     {
       scheme: "exact",
-      network: "eip155:8453",
+      network: BASE_MAINNET,
       payTo: PAY_TO_ADDRESS,
-      price: "0.001 USDC",
+      price: PRICE,
     },
   ],
+  description: "Random fortune generator",
+  mimeType: "application/json",
   extensions: {
-    "builder-code": {
-      info: {
-        a: BUILDER_CODE,
-      },
-    },
+    [BUILDER_CODE_KEY]: declareBuilderCodeExtension(BUILDER_CODE),
   },
-}
+})
 
 export async function GET(_req: NextRequest) {
+  const paymentRequirement = createPaymentRequirement()
+  
   return new NextResponse(
     JSON.stringify({
       error: "Payment Required",
@@ -47,6 +41,8 @@ export async function GET(_req: NextRequest) {
 }
 
 export async function POST(_req: NextRequest) {
+  const paymentRequirement = createPaymentRequirement()
+  
   return new NextResponse(
     JSON.stringify({
       error: "Payment Required",
