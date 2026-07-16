@@ -5,25 +5,31 @@ import { PAY_TO_ADDRESS, BUILDER_CODE, BASE_MAINNET, PRICE } from "@/lib/x402"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-// x402 Payment Requirement Challenge with Builder Code Attribution
-const createPaymentRequirement = () => ({
+// x402 V2 Payment Required schema with Builder Code extension
+const createPaymentRequired = () => ({
+  x402Version: 2,
+  resource: {
+    url: "/api/fortune",
+    description: "Random fortune generator",
+    mimeType: "application/json",
+  },
   accepts: [
     {
       scheme: "exact",
       network: BASE_MAINNET,
+      asset: "USDC",
+      amount: PRICE,
       payTo: PAY_TO_ADDRESS,
-      price: PRICE,
+      maxTimeoutSeconds: 60,
     },
   ],
-  description: "Random fortune generator",
-  mimeType: "application/json",
   extensions: {
     [BUILDER_CODE_KEY]: declareBuilderCodeExtension(BUILDER_CODE),
   },
 })
 
 export async function GET(_req: NextRequest) {
-  const paymentRequirement = createPaymentRequirement()
+  const paymentRequired = createPaymentRequired()
   
   return new NextResponse(
     JSON.stringify({
@@ -34,14 +40,14 @@ export async function GET(_req: NextRequest) {
       status: 402,
       headers: {
         "Content-Type": "application/json",
-        "Payment-Required": Buffer.from(JSON.stringify(paymentRequirement)).toString("base64"),
+        "Payment-Required": Buffer.from(JSON.stringify(paymentRequired)).toString("base64"),
       },
     }
   )
 }
 
 export async function POST(_req: NextRequest) {
-  const paymentRequirement = createPaymentRequirement()
+  const paymentRequired = createPaymentRequired()
   
   return new NextResponse(
     JSON.stringify({
@@ -52,7 +58,7 @@ export async function POST(_req: NextRequest) {
       status: 402,
       headers: {
         "Content-Type": "application/json",
-        "Payment-Required": Buffer.from(JSON.stringify(paymentRequirement)).toString("base64"),
+        "Payment-Required": Buffer.from(JSON.stringify(paymentRequired)).toString("base64"),
       },
     }
   )
