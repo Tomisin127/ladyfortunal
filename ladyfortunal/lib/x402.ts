@@ -9,17 +9,17 @@ import { createFacilitatorConfig } from "@coinbase/x402"
  * Base mainnet network id (CAIP-2).
  * USDC payments settle here through the Coinbase CDP facilitator.
  */
-export const BASE_MAINNET = "eip155:8453"
+export const BASE_MAINNET = "eip155:8453" as const
 
 /**
  * The wallet that receives the USDC for each purchase.
  */
-export const PAY_TO_ADDRESS = process.env.PAYMENT_WALLET_ADDRESS || ""
+export const PAY_TO_ADDRESS = "0x88a4CDea106f18e919613a4EAeD8efdb2183E9ea" as const
 
 /**
  * ERC-8021 Builder Code (app code "a") attributed on every settlement.
  */
-export const BUILDER_CODE = process.env.BASE_BUILDER_CODE || "bc_placeholder"
+export const BUILDER_CODE = "bc_6qzccf83" as const
 
 /**
  * Price per purchase, expressed in USD. The CDP facilitator resolves "$" prices
