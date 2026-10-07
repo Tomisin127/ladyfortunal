@@ -25,7 +25,7 @@ export const BUILDER_CODE = "bc_6qzccf83" as const
  * Price per purchase, expressed in USD. The CDP facilitator resolves "$" prices
  * to USDC on Base mainnet.
  */
-export const PRICE = "$0.001" as const
+export const PRICE = "$0.01" as const
 
 if (!process.env.CDP_API_KEY_ID || !process.env.CDP_API_KEY_SECRET) {
   // Surfaced at request time so the route returns a clear 500 instead of a cryptic auth error.
